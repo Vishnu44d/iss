@@ -64,7 +64,7 @@ void decrypt(char *cipher_file_name, char *key_file)
         while ((ch = fgetc(InFile)) != EOF)
         {
             int k;
-            fscanf(KeyFile, "%d ", &k);;
+            fscanf(KeyFile, "%d ", &k);
             //printf("%d ", k);
             int p = ch-'a';
             p = (26+p-k)%26;

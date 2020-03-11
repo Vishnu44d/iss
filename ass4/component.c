@@ -6,7 +6,7 @@
 
 #define STREAM (1024*8)
 #define BLOCK_SIZE 8
-#define NO_OF_ROUDS 5
+#define NO_OF_ROUDS 4
 
 /*
         To generate a random key.
@@ -64,6 +64,21 @@ unsigned char *permutation_box(unsigned char *input){           // 8 bit permuta
 }
 
 /*
+        Implementation of P-BOX Inverse.
+INPUT:  input array (It uses a table, defined inside this function).
+OUTPUT: An array of permutated input according to the table.
+*/
+unsigned char *permutation_box_inverse(unsigned char *input){           // 8 bit permutation box;
+    unsigned char *output = (unsigned char *)malloc(BLOCK_SIZE);
+    int table[BLOCK_SIZE] = {0,6,4,1,2,5,3,7};
+    int i;
+    for(i=0; i<BLOCK_SIZE; i++){
+        output[i] = input[table[i]];
+    }
+    return output;
+}
+
+/*
         To convert a 4-bit binary array in decimal number.
 INPUT:  input binary array.
 OUTPUT: a decimal number.
@@ -84,6 +99,30 @@ unsigned char *subsitution_box(unsigned char *input){           // 4 bit substit
     unsigned char *output1 = (unsigned char *)malloc(4);
     unsigned char in = getNumber(input);
     int table[16] = {14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7};
+    int res = table[in];
+    int i;
+    for(i=0; i<4; i++)
+    {
+        output[i] = (res & (0x1<<(i))) ==0 ? 0: 1;
+        //printf("%d ", output[i]);
+    }
+    for(i=0; i<4; i++)
+        output1[i] = output[3-i];
+    //printf("\nres %d\n", res);
+    free(output);
+    return output1;
+}
+
+/*
+        Implementation of S-BOX-Inv.
+INPUT:  input array (It uses a table, defined inside this function).
+OUTPUT: An array according to the subsitution table.
+*/
+unsigned char *subsitution_box_inverse(unsigned char *input){           // 4 bit substitution box;
+    unsigned char *output = (unsigned char *)malloc(4);
+    unsigned char *output1 = (unsigned char *)malloc(4);
+    unsigned char in = getNumber(input);
+    int table[16] = {14, 3, 4, 8, 1, 12, 10, 15, 7, 13, 9, 6, 11, 2, 0, 5};
     int res = table[in];
     int i;
     for(i=0; i<4; i++)
@@ -194,27 +233,174 @@ unsigned char *each_round(unsigned char *input, unsigned char *key, int round){
         printf("%d ", after_sbox[i]);
     printf("\n");
 
+    if(round!=4){
+        // p-box opeartion
+        unsigned char *after_pbox = (unsigned char *)malloc(8);
+        after_pbox = permutation_box(after_sbox);
 
-    // p-box opeartion
-    unsigned char *after_pbox = (unsigned char *)malloc(8);
-    after_pbox = permutation_box(after_sbox);
+        printf("AFTER P-BOX \t");
+        for(i=0; i<BLOCK_SIZE; i++)
+            printf("%d ", after_pbox[i]);
+        printf("\n");
 
-    printf("AFTER P-BOX \t");
-    for(i=0; i<BLOCK_SIZE; i++)
-        printf("%d ", after_pbox[i]);
-    printf("\n");
-
-    // Whitning operation with key
-    for(i=0; i<BLOCK_SIZE; i++)
-    {
-        output[i] = after_pbox[i]^this_key[i];
+        // Whitning operation with key
+        
+        for(i=0; i<BLOCK_SIZE; i++)
+        {
+            output[i] = after_pbox[i];
+        }
     }
-
+    else{
+        for(i=0; i<BLOCK_SIZE; i++)
+        {
+            output[i] = after_sbox[i];
+        }
+    }
+    
+    
+    /*
     printf("AFTER WHITE \t");
     for(i=0; i<BLOCK_SIZE; i++)
         printf("%d ", output[i]);
     printf("\n");
+    */
 
+    
+
+
+    // free all local variables
+    free(after_xor);
+    free(after_sbox);
+    //free(after_pbox);
+    free(sbox1in);
+    free(sbox2in);
+    free(sbox1out);
+    free(sbox2out);
+    free(this_key);
+
+    return output;
+}
+
+
+char *encrypt(unsigned char *plain_text, unsigned char *key){
+    int round = 1;
+    unsigned char *out = (unsigned char *)malloc(BLOCK_SIZE);
+    char *cipher_text = (char *)malloc(BLOCK_SIZE);
+    out = plain_text;
+    for(;round<=NO_OF_ROUDS; round++)
+        out = each_round(out, key, round);
+
+
+    unsigned char *key5 = (unsigned char *)malloc(BLOCK_SIZE);
+    key5 = getRoundKey(key, 5);
+
+    int i;
+    for(i=0;i<BLOCK_SIZE;i++)
+        out[i] = out[i]^key5[i];
+    
+    for(i=0;i<BLOCK_SIZE;i++)
+    {
+        cipher_text[i]=out[i]==1?'1':'0';
+        //cipher_text[i+1]=' ';
+    }
+    printf("ENC%s", cipher_text);
+
+    return cipher_text;
+}
+
+
+/*
+        To perform the actions in each round (encryption).
+INPUT:  input array, key and round number.
+OUTPUT: output array for given round.
+*/
+unsigned char *each_roundDecrypt(unsigned char *input, unsigned char *key, int round){
+
+    unsigned char *output = (unsigned char *)malloc(BLOCK_SIZE);
+    unsigned char *this_key = (unsigned char *)malloc(BLOCK_SIZE);
+    int i;
+    printf("\n\tROUND--%d\n", round);
+    printf("plain \t");
+    for(i=0; i<BLOCK_SIZE; i++){
+        printf("%d ", input[i]);
+    }
+    printf("\n");
+
+    //getting round key for this round
+    printf("\n KEY USEd K%d\n", NO_OF_ROUDS-round+2);
+    this_key = getRoundKey(key, NO_OF_ROUDS-round+2);
+
+    printf("Key \t");
+    for(i=0; i<BLOCK_SIZE; i++){
+        printf("%d ", this_key[i]);
+    }
+    printf("\n");
+
+    // XOR opeartion 
+    unsigned char *after_xor = (unsigned char *)malloc(8);
+    printf("\nAfter XOR op\t");
+    for(i=0; i<BLOCK_SIZE; i++)
+    {
+        after_xor[i] = input[i]^this_key[i];
+        printf("%d ", after_xor[i]);
+    }
+    printf("\n");
+
+    // p-box inv opeartion
+    unsigned char *after_pbox = (unsigned char *)malloc(8);
+    if(round != 1){
+        
+        after_pbox = permutation_box_inverse(after_xor);
+
+        printf("AFTER P-BOX \t");
+        for(i=0; i<BLOCK_SIZE; i++)
+            printf("%d ", after_pbox[i]);
+        printf("\n");
+    }
+    else{
+        for(i=0; i<BLOCK_SIZE; i++)
+            after_pbox[i] = after_xor[i];
+    }
+    
+
+
+    // S-BOX inv
+    unsigned char *after_sbox = (unsigned char *)malloc(8);
+    unsigned char *sbox1in = (unsigned char *)malloc(4);
+    unsigned char *sbox2in = (unsigned char *)malloc(4);
+    unsigned char *sbox1out = (unsigned char *)malloc(4);
+    unsigned char *sbox2out = (unsigned char *)malloc(4);
+
+    sbox1in = slice(after_pbox, 0, 4);
+    sbox2in = slice(after_pbox, 4, 8);
+
+    sbox1out = subsitution_box_inverse(sbox1in);
+    sbox2out = subsitution_box_inverse(sbox2in);
+
+    after_sbox = concat(sbox1out, 4, sbox2out, 4);
+    printf("AFTER S-BOX \t");
+    for(i=0; i<BLOCK_SIZE; i++)
+        printf("%d ", after_sbox[i]);
+    printf("\n");
+
+
+    
+
+    // Whitning operation with key
+    
+    for(i=0; i<BLOCK_SIZE; i++)
+    {
+        output[i] = after_sbox[i];
+    }
+    
+    /*
+    printf("AFTER WHITE \t");
+    for(i=0; i<BLOCK_SIZE; i++)
+        printf("%d ", output[i]);
+    printf("\n");
+    */
+
+    
 
 
     // free all local variables
@@ -230,25 +416,36 @@ unsigned char *each_round(unsigned char *input, unsigned char *key, int round){
     return output;
 }
 
-
-char *encrypt(unsigned char *plain_text, unsigned char *key){
+char *decrypt(unsigned char *cipher_text, unsigned char *key){
     int round = 1;
+    printf("\n\n\tDECRYPTION\n\n");
+    int j;
+    for(j=0; j<BLOCK_SIZE; j++)
+        printf(" %d ", cipher_text[j]);
     unsigned char *out = (unsigned char *)malloc(BLOCK_SIZE);
-    char *cipher_text = (char *)malloc(2*BLOCK_SIZE);
-    out = plain_text;
+    char *plain_text = (char *)malloc(BLOCK_SIZE);
+    out = cipher_text;
     for(;round<=NO_OF_ROUDS; round++)
-        out = each_round(out, key, round);
-    
+        out = each_roundDecrypt(out, key, round);
+
+
+    unsigned char *key1 = (unsigned char *)malloc(BLOCK_SIZE);
+    key1 = getRoundKey(key, 1);
     int i;
+    for(i=0;i<BLOCK_SIZE;i++)
+        printf(" %d ", key1[i]);
+    for(i=0;i<BLOCK_SIZE;i++)
+        out[i] = out[i]^key1[i];
+    
     for(i=0;i<BLOCK_SIZE;i++)
     {
         cipher_text[i]=out[i]==1?'1':'0';
         //cipher_text[i+1]=' ';
     }
-    //printf("ABCD%s", cipher_text);
+    printf("\nDECR%s\n", cipher_text);
+
     return cipher_text;
 }
-
 
 int main(void){
     //generateKey("key.txt", 24);
@@ -258,8 +455,11 @@ int main(void){
         printf("%d ", key[i]);
     printf("\n\n");
     unsigned char s[BLOCK_SIZE] = {1, 0, 1, 1, 0, 1, 1, 0};
+    unsigned char c[BLOCK_SIZE] = {1, 1, 0, 1, 0, 1, 0, 1};
+    
     char *cip = encrypt(s, key);
-    printf("\n%s\n", cip);
+    decrypt(c, key);
+    //printf("\n%s\n", cip);
     
     return 0;
 }

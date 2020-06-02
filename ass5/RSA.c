@@ -6,7 +6,7 @@
 /*   By: Vishnu <vishnu44d@gmail.com>               +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/06/01 09:10:29 by Vishnu            #+#    #+#             */
-/*   Updated: 2020/06/01 19:17:22 by Vishnu           ###   ########.fr       */
+/*   Updated: 2020/06/02 14:28:17 by Vishnu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -186,6 +186,40 @@ void print_i128(i128 *b)
     i128_free(copy);
     i128_free(remainder);
     free(buffer);
+}
+
+// to print i128 just by repetative division by 10
+void fprint_i128(FILE *f, i128 *b)
+{
+    int cap = 100, len = 0, i;
+    char *buffer = malloc(cap * sizeof(char));
+    i128 *copy = i128_init(), *remainder = i128_init();
+    // FILE *f;
+    // f = fopen("test.txt", "a+");
+    if (b->length == 0 || isZero(b))
+        fputc('0', f);
+    // printf("0");
+    else
+    {
+        cpy(b, copy);
+        while (isNonZero(copy))
+        {
+            inplace_divider(copy, &NUMS[10], remainder);
+            buffer[len++] = remainder->data[0];
+            if (len >= cap)
+            {
+                cap *= 2;
+                buffer = realloc(buffer, cap * sizeof(char));
+            }
+        }
+        for (i = len - 1; i >= 0; i--)
+            fprintf(f, "%d", buffer[i]);
+        // printf("%d", buffer[i]);
+    }
+    i128_free(copy);
+    i128_free(remainder);
+    free(buffer);
+    // fclose(f);
 }
 
 // check if b1==b2
@@ -875,15 +909,18 @@ i128 *encodeMessage(int len, int bytes, char *message, i128 *exponent, i128 *mod
     }
     return encoded;
 }
+
 // decode the entire message
-int *decodeMessage(int len, int bytes, i128 *cryptogram, i128 *exponent, i128 *modulus)
+char *decodeMessage(int len, int bytes, i128 *cryptogram, i128 *exponent, i128 *modulus)
 {
     int *decoded = malloc(len * bytes * sizeof(int));
-    int i, j;
+    char *msg = (char *)malloc(len * bytes * sizeof(char));
+    int i, j, k;
     i128 *x = i128_init(), *remainder = i128_init();
     i128 *num128 = i128_init();
-    printf("Decoded message is: ");
+    // printf("Decoded message is: ");
     from_int_to_i128(num128, 128);
+    k = 0;
     for (i = 0; i < len; i++)
     {
         decode(&cryptogram[i], exponent, modulus, x);
@@ -894,10 +931,14 @@ int *decodeMessage(int len, int bytes, i128 *cryptogram, i128 *exponent, i128 *m
                 decoded[i * bytes + j] = (char)0;
             else
                 decoded[i * bytes + j] = (char)(remainder->data[0]);
-            printf("%c", (char)(decoded[i * bytes + j]));
+            // printf("%c", (char)(decoded[i * bytes + j]));
+            msg[k++] = (char)(decoded[i * bytes + j]);
         }
     }
-    return decoded;
+    // printf("\n");
+    msg[k] = '\0';
+    // printf("\n\nmsg is: %s", msg);
+    return msg;
 }
 
 // main function
@@ -910,7 +951,7 @@ int main(void)
     i128 *temp1 = i128_init(), *temp2 = i128_init();
 
     i128 *encoded;
-    int *decoded;
+    char *decoded;
     char *buffer;
     FILE *f, *fp;
 
@@ -948,6 +989,15 @@ int main(void)
     printf(")");
     printf("\n");
 
+    // Writing public key in the file
+    fp = fopen("publickey.txt", "w+");
+    fprintf(fp, "----------------RSA-PUBLIC-KEY-BEGIN----------------\n( ");
+    fprint_i128(fp, e);
+    fprintf(fp, " , ");
+    fprint_i128(fp, n);
+    fprintf(fp, " )\n----------------RSA-PUBLIC-KEY-END----------------");
+    fclose(fp);
+
     compute_inverse(e, phi, d);
     printf("d = ");
     print_i128(d);
@@ -957,6 +1007,15 @@ int main(void)
     print_i128(n);
     printf(")");
     printf("\n");
+
+    // Writing private key in the file
+    fp = fopen("privatekey.txt", "w+");
+    fprintf(fp, "----------------RSA-PRIVATE-KEY-BEGIN----------------\n( ");
+    fprint_i128(fp, d);
+    fprintf(fp, " , ");
+    fprint_i128(fp, n);
+    fprintf(fp, " )\n----------------RSA-PRIVATE-KEY-END----------------");
+    fclose(fp);
 
     /* Compute maximum number of bytes that can be encoded in one encryption */
     bytes = -1;
@@ -968,6 +1027,8 @@ int main(void)
         bytes++;
     }
 
+    printf("BYTES: %d", bytes);
+
     f = fopen("message.txt", "r");
     if (f == NULL)
     {
@@ -977,12 +1038,31 @@ int main(void)
     len = readFile(f, &buffer, bytes); // len is a multiple of bytes
     printf("\n");
     encoded = encodeMessage(len, bytes, buffer, e, n);
+
+    // writing encoded message in file
+    fp = fopen("cipher.txt", "w+");
+    // fprintf(fp, "----------------CIPHER-TEXT-BEGIN----------------\n( ");
+    for (i = 0; i < len / bytes; i++)
+    {
+        fprint_i128(fp, &encoded[i]);
+    }
+    // fprintf(fp, " )\n----------------CIPHER-TEXT-END----------------");
+    fclose(fp);
+
     printf("\n\nEncoded message successfully");
 
     printf("\nDecoding encoded message. Press enter to continue");
     getchar();
     printf("\n");
     decoded = decodeMessage(len / bytes, bytes, encoded, d, n);
+    printf("Decoded msg is: %s\n", decoded);
+    printf("\n\nLEN: %d\nLEN/BYTES: %d", len, (len / bytes));
+
+    fp = fopen("plain.txt", "w+");
+    fprintf(fp, "----------------PLAIN-TEXT-BEGIN----------------\n( ");
+    fprintf(fp, "%s", decoded);
+    fprintf(fp, " )\n----------------PLAIN-TEXT-END----------------");
+    fclose(fp);
 
     for (i = 0; i < len / bytes; i++)
         free(encoded[i].data);

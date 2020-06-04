@@ -6,7 +6,7 @@
 /*   By: Vishnu <vishnu44d@gmail.com>               +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/06/02 12:55:40 by Vishnu            #+#    #+#             */
-/*   Updated: 2020/06/02 19:01:35 by Vishnu           ###   ########.fr       */
+/*   Updated: 2020/06/04 17:53:35 by Vishnu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1013,20 +1013,39 @@ int main(int argc, char const *argv[])
     print_i128(n);
     printf("\n");
 
-    int in_len;
-    char *buffer;
     int bytes = 94;
 
-    // fp = fopen("cipher.txt", "r");
-    // in_len = readFile(fp, &buffer, bytes);
-    // fclose(fp);
-    // i128 *cipher = i128_init();
-    // from_str_to_i128(cipher, buffer);
-    // char *decoded;
-    // decoded = decodeMessage(in_len / bytes, bytes, cipher, d, n);
-    // printf("\n\n%s\n", decoded);
+    //--------------------------------FIRST-ENCRYPTING-MY-KYC-DOCUMENT-------------------------------------------------
+    FILE *f;
+    int k_len;
+    char *b;
+    f = fopen("KYC.txt", "r");
+    if (f == NULL)
+    {
+        printf("Failed to open file \"KYC.txt\". Does it exist?\n");
+        return EXIT_FAILURE;
+    }
+    k_len = readFile(f, &b, bytes); // len is a multiple of bytes
+    printf("\n");
+    i128 *encoded = i128_init();
+    encoded = encodeMessage(k_len, bytes, b, e, n);
 
-    fp = fopen("cipher.txt", "r");
+    // writing encoded message in file
+    fp = fopen("cipherKYC.txt", "w+");
+    // fprintf(fp, "----------------CIPHER-TEXT-BEGIN----------------\n( ");
+    int i;
+    for (i = 0; i < k_len / bytes; i++)
+    {
+        fprint_i128(fp, &encoded[i]);
+    }
+    // fprintf(fp, " )\n----------------CIPHER-TEXT-END----------------");
+    fclose(fp);
+    //------------------------------------------------------------------------------------------------
+
+    int in_len;
+    char *buffer;
+
+    fp = fopen("cipherKYC.txt", "r");
     in_len = readFile(fp, &buffer, bytes);
     fclose(fp);
     printf("\nMessage is (M): %s\n", buffer);

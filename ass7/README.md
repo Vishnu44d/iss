@@ -22,3 +22,10 @@ x ≡ 6 (mod 11), x ≡ 13 (mod 16), x ≡ 9 (mod 21), x ≡ 19 (mod 25)
 5. The array M contains the list of m<sub>i</sub>s.
 
 6. It just prints the value of x.
+
+7. To run the code
+
+```bash
+1. gcc -o chRemainderTh chineseRemainderTh.c
+2. ./chRemainderTh
+```

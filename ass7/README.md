@@ -1,5 +1,7 @@
 # Assignment 7
 
+github: https://github.com/Vishnu44d/iss/tree/master/ass7
+
 ## Problem
 
 Implement the Chinese Remainder Theorem. Hence solve for x from the following set of

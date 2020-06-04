@@ -6,7 +6,7 @@
 /*   By: Vishnu <vishnu44d@gmail.com>               +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/06/02 23:27:15 by Vishnu            #+#    #+#             */
-/*   Updated: 2020/06/03 00:44:56 by Vishnu           ###   ########.fr       */
+/*   Updated: 2020/06/04 18:21:18 by Vishnu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -313,7 +313,7 @@ int main(int argc, char const *argv[])
     FILE *fd;
     int len;
     char *message;
-    fd = fopen("msg.txt", "r");
+    fd = fopen("KYC.txt", "r");
     message = readFile(fd, &len);
     fclose(fd);
     printf("Read message from file: %s\nlen: %d\n", message, len);

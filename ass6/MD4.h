@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: Vishnu <vishnu44d@gmail.com>               +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2020/06/03 00:41:43 by Vishnu            #+#    #+#             */
-/*   Updated: 2020/06/03 00:42:56 by Vishnu           ###   ########.fr       */
+/*   Created: 2020/06/02 00:41:43 by Vishnu            #+#    #+#             */
+/*   Updated: 2020/06/04 18:10:00 by Vishnu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -307,4 +307,3 @@ char *readFileMD4Input(FILE *fd, int *len)
     *len = i;
     return content;
 }
-
